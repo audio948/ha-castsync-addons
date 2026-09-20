@@ -32,7 +32,12 @@ FROM ${BUILD_FROM} AS spotify-builder
 # base without gcompat. Slower image build, no ABI guessing.
 RUN apk add --no-cache build-base rust cargo pkgconfig alsa-lib-dev openssl-dev git
 WORKDIR /src
-RUN git clone --depth 1 --branch v0.8.0 https://github.com/librespot-org/librespot.git \
+# Pinned to v0.6.0, not a newer release: librespot v0.7.0+ requires Cargo's
+# edition2024 (rust-version 1.85+), but Alpine 3.19's packaged cargo is only
+# 1.76. v0.6.0 is edition2021 / rust-version 1.75, which matches what apk
+# actually installs. Bumping this later means bumping the Alpine version (or
+# installing rustup) to get a newer cargo to match, not just changing the tag.
+RUN git clone --depth 1 --branch v0.6.0 https://github.com/librespot-org/librespot.git \
     && cd librespot \
     && cargo build --release \
     && cp target/release/librespot /usr/local/bin/librespot
