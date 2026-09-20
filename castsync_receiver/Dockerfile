@@ -8,12 +8,11 @@ RUN apk add --no-cache \
         build-base autoconf automake libtool git pkgconfig linux-headers \
         alsa-lib-dev libconfig-dev openssl-dev popt-dev soxr-dev
 WORKDIR /src
-RUN git clone --depth 1 https://github.com/mikebrady/tinysvcmdns.git \
-    && cd tinysvcmdns \
-    && make \
-    && cp libtinysvcmdns.a /usr/lib/ \
-    && cp *.h /usr/include/
-RUN git clone --depth 1 --branch 4.3.4 https://github.com/mikebrady/shairport-sync.git \
+# tinysvcmdns is NOT a separate library -- --with-tinysvcmdns compiles
+# tinysvcmdns.c straight out of shairport-sync's own source tree. (An earlier
+# version of this Dockerfile wrongly tried to clone a standalone
+# mikebrady/tinysvcmdns repo that doesn't exist -- that's the fix here.)
+RUN git clone --depth 1 --branch 5.5.2 https://github.com/mikebrady/shairport-sync.git \
     && cd shairport-sync \
     && autoreconf -fi \
     && ./configure --sysconfdir=/etc \
@@ -33,7 +32,7 @@ FROM ${BUILD_FROM} AS spotify-builder
 # base without gcompat. Slower image build, no ABI guessing.
 RUN apk add --no-cache build-base rust cargo pkgconfig alsa-lib-dev openssl-dev git
 WORKDIR /src
-RUN git clone --depth 1 --branch v0.6.0 https://github.com/librespot-org/librespot.git \
+RUN git clone --depth 1 --branch v0.8.0 https://github.com/librespot-org/librespot.git \
     && cd librespot \
     && cargo build --release \
     && cp target/release/librespot /usr/local/bin/librespot
@@ -45,9 +44,9 @@ FROM ${BUILD_FROM} AS snapserver-builder
 RUN apk add --no-cache \
         build-base cmake git pkgconfig \
         alsa-lib-dev boost-dev flac-dev libvorbis-dev opus-dev soxr-dev \
-        openssl-dev
+        openssl-dev expat-dev
 WORKDIR /src
-RUN git clone --depth 1 --branch v0.29.0 https://github.com/badaix/snapcast.git \
+RUN git clone --depth 1 --branch v0.35.0 https://github.com/badaix/snapcast.git \
     && cd snapcast \
     && cmake -B build \
         -DCMAKE_BUILD_TYPE=Release \
@@ -63,10 +62,10 @@ FROM ${BUILD_FROM}
 # Runtime-only shared libs matching the -dev packages used above, plus
 # bashio/tempio/s6 which the HA base image already provides.
 RUN apk add --no-cache \
-        alsa-lib libconfig openssl-libs-static popt soxr \
-        boost-system boost-filesystem boost-program_options \
-        flac libvorbis opus \
-        avahi-tools bash
+        alsa-lib libconfig openssl popt soxr \
+        boost1.82-system boost1.82-filesystem boost1.82-program_options \
+        flac libvorbis opus expat \
+        bash
 
 COPY --from=airplay-builder /usr/local/bin/shairport-sync /usr/local/bin/shairport-sync
 COPY --from=spotify-builder /usr/local/bin/librespot /usr/local/bin/librespot
