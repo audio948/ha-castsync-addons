@@ -1,0 +1,3 @@
+* text=auto eol=lf
+rootfs/**/run text eol=lf
+rootfs/**/finish text eol=lf

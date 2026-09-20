@@ -1,0 +1,35 @@
+name: CastSync Receiver
+version: "0.1.0"
+slug: castsync_receiver
+description: >-
+  AirPlay and Spotify Connect receiver feeding a Snapcast server, so your
+  phone/Mac can cast audio into a tightly-synced multi-room group.
+url: https://github.com/audio948/ha-castsync-addons
+arch:
+  - aarch64
+  - amd64
+  - armv7
+init: false
+# mDNS (AirPlay, Spotify Connect zeroconf) is multicast -- it does not
+# reliably cross the default Docker bridge network, so this add-on needs the
+# host's network stack directly. Ports (1704 stream, 1705 control, 1780 web
+# UI, 5000 AirPlay RTSP) are therefore not declared below: under
+# host_network there is no port mapping for the Supervisor to manage, they
+# just bind straight to the host. See DOCS.md for the list.
+host_network: true
+options:
+  friendly_name: "Home Assistant"
+  enable_airplay: true
+  enable_spotify: true
+  airplay_password: ""
+  log_level: info
+schema:
+  friendly_name: str
+  enable_airplay: bool
+  enable_spotify: bool
+  airplay_password: str
+  log_level: list(trace|debug|info|warning|error)
+# No `image:` key on purpose: the Supervisor builds this Dockerfile locally
+# on first install instead of pulling a prebuilt image. That's slower per
+# install but needs no CI/registry setup. See DOCS.md if you want to switch
+# to a published multi-arch image later.
