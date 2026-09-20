@@ -22,7 +22,7 @@ RUN git clone --depth 1 --branch 5.5.2 https://github.com/mikebrady/shairport-sy
         --with-soxr \
         --without-alsa \
         --without-pa \
-    && make -j"$(nproc)" \
+    && make -j2 \
     && make install
 
 # ---------------------------------------------------------------------------
@@ -37,9 +37,15 @@ WORKDIR /src
 # 1.76. v0.6.0 is edition2021 / rust-version 1.75, which matches what apk
 # actually installs. Bumping this later means bumping the Alpine version (or
 # installing rustup) to get a newer cargo to match, not just changing the tag.
+# -j2, not the default (one rustc codegen job per core): this is the most
+# memory-hungry stage of the whole build, and Pi RAM is already split across
+# every other add-on that stays running during the build. CARGO_INCREMENTAL=0
+# because incremental compilation caching buys nothing in a one-shot Docker
+# layer and just adds overhead.
+ENV CARGO_INCREMENTAL=0
 RUN git clone --depth 1 --branch v0.6.0 https://github.com/librespot-org/librespot.git \
     && cd librespot \
-    && cargo build --release \
+    && cargo build --release --jobs 2 \
     && cp target/release/librespot /usr/local/bin/librespot
 
 # ---------------------------------------------------------------------------
@@ -59,7 +65,7 @@ RUN git clone --depth 1 --branch v0.35.0 https://github.com/badaix/snapcast.git 
         -DBUILD_SERVER=ON \
         -DBUILD_WITH_AVAHI=OFF \
         -DBUILD_TESTS=OFF \
-    && cmake --build build -j"$(nproc)" \
+    && cmake --build build -j2 \
     && install -Dm755 build/server/snapserver /usr/local/bin/snapserver
 
 # ---------------------------------------------------------------------------
